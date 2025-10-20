@@ -1,0 +1,24 @@
+# Binaries
+/sub-service
+*.exe
+*.out
+
+# Go build cache
+/vendor/
+/bin/
+/build/
+/dist/
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+
+# Docker
+db_data/
