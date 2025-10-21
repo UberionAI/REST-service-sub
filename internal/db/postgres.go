@@ -1,26 +1,33 @@
 package db
 
 import (
-	"context"
-	"database/sql"
+	"REST-service-sub/internal/config"
 	"fmt"
-	"time"
-
 	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
 )
 
-func NewPostgresDB(dsn string) (*sql.DB, error) {
-	db, err := sql.Open("postgres", dsn)
+func NewGormDB(cfg *config.Config) (*gorm.DB, error) {
+	dsn := cfg.DSN()
+	gormLogger := logger.Default.LogMode(logger.Warn)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: gormLogger,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error opening postgres connection: %w", err)
+		return nil, fmt.Errorf("failed open gorm: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := db.PingContext(ctx); err != nil {
-		return nil, fmt.Errorf("error pinging postgres connection: %w", err)
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed get sqlDB: %w", err)
 	}
 
+	sqlDB.SetConnMaxLifetime(25)
+	sqlDB.SetMaxIdleConns(10)
+
+	log.Println("gorm connection successful...")
 	return db, nil
 }
