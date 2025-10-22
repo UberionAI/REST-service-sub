@@ -114,13 +114,28 @@ func (h *SubscriptionHandler) Update(c *gin.Context) {
 		return
 	}
 	// validate, parse dates, build model same as Create
-	startDate, _ := ParseMonthYear(dto.StartDate)
+	startDate, err := ParseMonthYear(dto.StartDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid start_date"})
+		return
+	}
+
 	var endDate *time.Time
 	if dto.EndDate != nil {
-		ed, _ := ParseMonthYear(*dto.EndDate)
+		ed, err := ParseMonthYear(*dto.EndDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid end_date"})
+			return
+		}
 		endDate = &ed
 	}
-	uid, _ := uuid.Parse(dto.UserID)
+
+	uid, err := uuid.Parse(dto.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+		return
+	}
+
 	updated := &model.Subscription{
 		ServiceName: dto.ServiceName,
 		Price:       dto.Price,
@@ -128,6 +143,7 @@ func (h *SubscriptionHandler) Update(c *gin.Context) {
 		StartDate:   startDate,
 		EndDate:     endDate,
 	}
+
 	if err := h.svc.Update(id, updated); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
 		return

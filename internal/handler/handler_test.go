@@ -68,10 +68,7 @@ func newTestHandler() *SubscriptionHandler {
 	}
 }
 
-//
-// 3️⃣ Тесты
-//
-
+// CRUD test
 func TestCreateSubscription(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	h := newTestHandler()
@@ -146,6 +143,8 @@ func TestUpdateSubscription(t *testing.T) {
 	dto := map[string]interface{}{
 		"service_name": "Updated Name",
 		"price":        999,
+		"user_id":      uuid.New().String(),
+		"start_date":   "07-2025",
 	}
 	body, _ := json.Marshal(dto)
 
@@ -154,7 +153,7 @@ func TestUpdateSubscription(t *testing.T) {
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code, "ожидали 200 при корректных данных")
 }
 
 func TestDeleteSubscription(t *testing.T) {
@@ -187,4 +186,140 @@ func TestAggregateTotalCost(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(800), resp["total_cost"])
+}
+
+// Negative tests
+func TestCreateSubscription_InvalidDateFormat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := newTestHandler()
+	router := gin.New()
+	h.RegisterRoutes(router)
+
+	dto := map[string]interface{}{
+		"service_name": "Netflix",
+		"price":        500,
+		"user_id":      uuid.New().String(),
+		"start_date":   "2025/07", // uncorrected form date
+	}
+	body, _ := json.Marshal(dto)
+
+	req, _ := http.NewRequest("POST", "/subscriptions", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "ожидали 400 из-за неверного формата даты")
+}
+
+func TestCreateSubscription_MissingUserID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := newTestHandler()
+	router := gin.New()
+	h.RegisterRoutes(router)
+
+	dto := map[string]interface{}{
+		"service_name": "Spotify",
+		"price":        300,
+		"start_date":   "07-2025",
+	}
+	body, _ := json.Marshal(dto)
+
+	req, _ := http.NewRequest("POST", "/subscriptions", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "ожидали 400 из-за отсутствующего user_id")
+}
+
+func TestCreateSubscription_InvalidUserIDFormat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := newTestHandler()
+	router := gin.New()
+	h.RegisterRoutes(router)
+	dto := map[string]interface{}{
+		"service_name": "YouTube Premium",
+		"price":        200,
+		"user_id":      "not-a-uuid",
+		"start_date":   "07-2025",
+	}
+	body, _ := json.Marshal(dto)
+
+	req, _ := http.NewRequest("POST", "/subscriptions", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "ожидали 400 из-за неверного UUID")
+}
+
+func TestUpdateSubscription_InvalidUUID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := newTestHandler()
+	router := gin.New()
+	h.RegisterRoutes(router)
+
+	// Некорректный UUID в URL
+	dto := map[string]interface{}{
+		"service_name": "Netflix",
+		"price":        500,
+		"user_id":      uuid.New().String(),
+		"start_date":   "07-2025",
+	}
+	body, _ := json.Marshal(dto)
+
+	req, _ := http.NewRequest("PUT", "/subscriptions/not-a-uuid", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "ожидали 400 из-за неверного UUID в URL")
+}
+
+func TestUpdateSubscription_InvalidJSON(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := newTestHandler()
+	router := gin.New()
+	h.RegisterRoutes(router)
+
+	id := uuid.New()
+
+	// Некорректный JSON (отсутствует закрывающая фигурная скобка)
+	body := []byte(`{"service_name":"Netflix","price":500`)
+
+	req, _ := http.NewRequest("PUT", "/subscriptions/"+id.String(), bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "ожидали 400 из-за неверного JSON")
+}
+
+func TestUpdateSubscription_InvalidDateFormat(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := newTestHandler()
+	router := gin.New()
+	h.RegisterRoutes(router)
+
+	id := uuid.New()
+	dto := map[string]interface{}{
+		"service_name": "Spotify",
+		"price":        400,
+		"user_id":      uuid.New().String(),
+		"start_date":   "2025/07", // неверный формат
+	}
+	body, _ := json.Marshal(dto)
+
+	req, _ := http.NewRequest("PUT", "/subscriptions/"+id.String(), bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code, "ожидали 400 из-за неверного формата даты")
 }
