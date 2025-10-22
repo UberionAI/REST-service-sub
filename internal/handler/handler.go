@@ -14,7 +14,7 @@ import (
 )
 
 type SubscriptionHandler struct {
-	svc      *service.SubscriptionService
+	svc      service.SubscriptionServiceInterface
 	validate *validator.Validate
 }
 

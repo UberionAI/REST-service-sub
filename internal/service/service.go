@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+type SubscriptionServiceInterface interface {
+	Create(*model.Subscription) error
+	GetByID(uuid.UUID) (*model.Subscription, error)
+	Update(uuid.UUID, *model.Subscription) error
+	Delete(uuid.UUID) error
+	List(map[string]interface{}, int, int) ([]model.Subscription, error)
+	AggregateTotalCost(time.Time, time.Time, *uuid.UUID, *string) (int64, error)
+}
+
 type SubscriptionService struct {
 	db *gorm.DB
 }
@@ -55,42 +64,33 @@ func (s *SubscriptionService) List(filter map[string]interface{}, limit, offset 
 }
 
 func (s *SubscriptionService) AggregateTotalCost(periodStart, periodEnd time.Time, userID *uuid.UUID, serviceName *string) (int64, error) {
-	pFrom := periodStart.Format("2006-01-02")
-	pTo := periodEnd.Format("2006-01-02")
-
 	sql := `
 SELECT COALESCE(SUM(
-  ((DATE_PART('year', LEAST(COALESCE(end_date, :p_to), :p_to)) * 12 + DATE_PART('month', LEAST(COALESCE(end_date, :p_to), :p_to)))
-   -
-  (DATE_PART('year', GREATEST(start_date, :p_from)) * 12 + DATE_PART('month', GREATEST(start_date, :p_from)))
-  + 1) * price
+    ((DATE_PART('year', LEAST(COALESCE(end_date, ?), ?)) * 12 + DATE_PART('month', LEAST(COALESCE(end_date, ?), ?)))
+     -
+    (DATE_PART('year', GREATEST(start_date, ?)) * 12 + DATE_PART('month', GREATEST(start_date, ?)))
+     + 1) * price
 ),0)::bigint as total
 FROM subscriptions
-WHERE start_date <= :p_to AND (end_date IS NULL OR end_date >= :p_from)
+WHERE start_date <= ? AND (end_date IS NULL OR end_date >= ?)
 `
-	// filters
+
+	args := []interface{}{periodEnd, periodEnd, periodEnd, periodEnd, periodStart, periodStart, periodEnd, periodStart}
+
+	// динамические фильтры
 	if userID != nil {
-		sql += " AND user_id = :user_id"
+		sql += " AND user_id = ?"
+		args = append(args, *userID)
 	}
 	if serviceName != nil {
-		sql += " AND service_name = :service_name"
+		sql += " AND service_name = ?"
+		args = append(args, *serviceName)
 	}
 
-	rows, err := s.db.Raw(sql, map[string]interface{}{
-		"p_from":       pFrom,
-		"p_to":         pTo,
-		"user_id":      userID,
-		"service_name": serviceName,
-	}).Rows()
-	if err != nil {
+	var total int64
+	if err := s.db.Raw(sql, args...).Scan(&total).Error; err != nil {
 		return 0, err
 	}
-	defer rows.Close()
-	var total int64
-	if rows.Next() {
-		if err := rows.Scan(&total); err != nil {
-			return 0, err
-		}
-	}
+
 	return total, nil
 }

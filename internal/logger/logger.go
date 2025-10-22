@@ -3,8 +3,12 @@ package logger
 import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"os"
 	"time"
 )
+
+type consoleWriter struct {
+}
 
 func Init(level string) {
 	zerolog.TimeFieldFormat = time.RFC3339
@@ -14,5 +18,7 @@ func Init(level string) {
 	default:
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: consoleWriter{}, TimeFormat: time.RFC3339})
+	log.Logger = log.Output(zerolog.ConsoleWriter{
+		Out:        os.Stdout,
+		TimeFormat: time.RFC3339})
 }

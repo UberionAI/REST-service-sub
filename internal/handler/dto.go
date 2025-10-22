@@ -6,10 +6,10 @@ import (
 )
 
 type CreateSubscriptionDTO struct {
-	ServiceName string  `json:"serviceName" validate:"required"`
+	ServiceName string  `json:"service_name" validate:"required"`
 	Price       int     `json:"price" validate:"required,min=0"`
-	UserID      string  `json:"userId" validate:"required,uuid4"`
-	StartDate   string  `json:"startDate" validate:"required"`
+	UserID      string  `json:"user_id" validate:"required,uuid4"`
+	StartDate   string  `json:"start_date" validate:"required"`
 	EndDate     *string `json:"end_date,omitempty"`
 }
 

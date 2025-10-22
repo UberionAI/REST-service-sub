@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
-	"net/http"
 )
 
 func main() {
@@ -34,12 +33,12 @@ func main() {
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestLogger())
 
-	subHandler.RegisterRoutes(r)
-
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+	// Health check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, "OK")
 	})
+
+	subHandler.RegisterRoutes(r)
 
 	addr := fmt.Sprintf(":%s", cfg.AppPort)
 	fmt.Printf("Server is listening on %s\n", addr)
