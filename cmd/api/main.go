@@ -17,7 +17,7 @@ import (
 
 // @title REST API Subscription service
 // @version 1.0
-// @description REST API сервис для агрегации данных об онлайн-подписках пользователей.
+// @description REST API for userdata aggregation of the subscriptions
 // @host localhost:8000
 // @BasePath /
 

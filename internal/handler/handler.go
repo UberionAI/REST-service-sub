@@ -34,6 +34,17 @@ func (h *SubscriptionHandler) RegisterRoutes(r *gin.Engine) {
 	r.GET("/subscriptions/aggregate", h.Aggregate)
 }
 
+// Create Subscription godoc
+// @Summary Create subscription
+// @Description Create a new subscription
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Param payload body CreateSubscriptionDTO true "*a field end_date is optional*"
+// @Success 201 {object} SubscriptionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /subscriptions [post]
 func (h *SubscriptionHandler) Create(c *gin.Context) {
 	var dto CreateSubscriptionDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
@@ -82,6 +93,18 @@ func (h *SubscriptionHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, sub)
 }
 
+// Get Subscription godoc
+// @Summary Get subscription by ID
+// @Description Retrieve a single subscription by its ID
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Param id path string true "Subscription ID"
+// @Success 200 {object} SubscriptionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /subscriptions/{id} [get]
 func (h *SubscriptionHandler) Get(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -101,6 +124,18 @@ func (h *SubscriptionHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, sub)
 }
 
+// Update Subscription godoc
+// @Summary Update subscription
+// @Description Update existing subscription by ID
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Param id path string true "Subscription ID"
+// @Param payload body CreateSubscriptionDTO true "Updated subscription payload"
+// @Success 200 {object} SubscriptionResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /subscriptions/{id} [put]
 func (h *SubscriptionHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -151,6 +186,15 @@ func (h *SubscriptionHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, updated)
 }
 
+// Delete Subscription godoc
+// @Summary Delete subscription
+// @Description Delete a subscription by ID
+// @Tags subscriptions
+// @Param id path string true "Subscription ID"
+// @Success 204
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /subscriptions/{id} [delete]
 func (h *SubscriptionHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
@@ -165,6 +209,17 @@ func (h *SubscriptionHandler) Delete(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// List Subscriptions godoc
+// @Summary List subscriptions
+// @Description Retrieve all subscriptions with optional filters
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Param user_id query string false "Filter by user UUID"
+// @Param service_name query string false "Filter by service name"
+// @Success 200 {array} SubscriptionResponse
+// @Failure 500 {object} map[string]string
+// @Router /subscriptions [get]
 func (h *SubscriptionHandler) List(c *gin.Context) {
 	filter := make(map[string]interface{})
 	if userID := c.Query("user_id"); userID != "" {
@@ -185,6 +240,20 @@ func (h *SubscriptionHandler) List(c *gin.Context) {
 	c.JSON(http.StatusOK, subs)
 }
 
+// Aggregate Subscriptions godoc
+// @Summary Aggregate subscription costs
+// @Description Calculate total subscription cost for a given period
+// @Tags subscriptions
+// @Accept json
+// @Produce json
+// @Param from query string true "Start of period (MM-YYYY or YYYY-MM)"
+// @Param to query string true "End of period (MM-YYYY or YYYY-MM)"
+// @Param user_id query string false "Filter by user UUID"
+// @Param service_name query string false "Filter by service name"
+// @Success 200 {object} models.AggregateResponse
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /subscriptions/aggregate [get]
 func (h *SubscriptionHandler) Aggregate(c *gin.Context) {
 	from := c.Query("from") // expecting YYYY-MM or MM-YYYY
 	to := c.Query("to")
