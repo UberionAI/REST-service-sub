@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "REST-service-sub/docs"
 	"REST-service-sub/internal/config"
 	"REST-service-sub/internal/db"
 	"REST-service-sub/internal/handler"
@@ -9,8 +10,16 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
 )
+
+// @title REST API Subscription service
+// @version 1.0
+// @description REST API сервис для агрегации данных об онлайн-подписках пользователей.
+// @host localhost:8000
+// @BasePath /
 
 func main() {
 	_ = godotenv.Load("../../.env")
@@ -32,6 +41,9 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestLogger())
+
+	// Swagger init
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
