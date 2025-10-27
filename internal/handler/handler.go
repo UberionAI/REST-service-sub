@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"gorm.io/gorm"
 	"net/http"
 	"strconv"
@@ -181,7 +182,11 @@ func (h *SubscriptionHandler) Update(c *gin.Context) {
 	}
 
 	if err := h.svc.Update(id, updated); err != nil {
-		respondWithError(c, http.StatusInternalServerError, err.Error())
+		if errors.Is(err, service.ErrSubscriptionNotFound) {
+			respondWithError(c, http.StatusNotFound, "subscription not found")
+			return
+		}
+		respondWithError(c, http.StatusNotFound, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, updated)
@@ -204,6 +209,10 @@ func (h *SubscriptionHandler) Delete(c *gin.Context) {
 		return
 	}
 	if err := h.svc.Delete(id); err != nil {
+		if errors.Is(err, service.ErrSubscriptionNotFound) {
+			respondWithError(c, http.StatusInternalServerError, "subscription not found")
+			return
+		}
 		respondWithError(c, http.StatusInternalServerError, err.Error())
 		return
 	}

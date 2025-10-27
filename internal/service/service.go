@@ -2,6 +2,7 @@ package service
 
 import (
 	"REST-service-sub/internal/model"
+	"errors"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"time"
@@ -19,6 +20,8 @@ type SubscriptionServiceInterface interface {
 type SubscriptionService struct {
 	db *gorm.DB
 }
+
+var ErrSubscriptionNotFound = errors.New("subscription not found")
 
 func NewSubscriptionService(db *gorm.DB) *SubscriptionService {
 	return &SubscriptionService{db: db}
@@ -38,11 +41,26 @@ func (s *SubscriptionService) GetByID(id uuid.UUID) (*model.Subscription, error)
 
 func (s *SubscriptionService) Update(id uuid.UUID, updated *model.Subscription) error {
 	updated.ID = id
-	return s.db.Model(&model.Subscription{}).Where("id = ?", id).Updates(updated).Error
+
+	tx := s.db.Model(&model.Subscription{}).Where("id = ?", id).Updates(updated)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return ErrSubscriptionNotFound
+	}
+	return nil
 }
 
 func (s *SubscriptionService) Delete(id uuid.UUID) error {
-	return s.db.Delete(&model.Subscription{}, "id = ?", id).Error
+	tx := s.db.Delete(&model.Subscription{}, "id = ?", id)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return ErrSubscriptionNotFound
+	}
+	return nil
 }
 
 func (s *SubscriptionService) List(filter map[string]interface{}, limit, offset int) ([]model.Subscription, error) {
