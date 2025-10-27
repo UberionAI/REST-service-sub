@@ -13,6 +13,7 @@ type Config struct {
 	PostgresHost string
 	PostgresPort string
 	PgSSLMode    string
+	LogLevel     string
 }
 
 //LoadConfig loads the config from the environment
@@ -26,6 +27,7 @@ func LoadConfig() *Config {
 		PostgresHost: getEnv("POSTGRES_HOST", "127.0.0.1"),
 		PostgresPort: getEnv("POSTGRES_PORT", "5432"),
 		PgSSLMode:    getEnv("POSTGRES_SSLMODE", "disable"),
+		LogLevel:     getEnv("LOG_LEVEL", "info"),
 	}
 	return cfg
 }

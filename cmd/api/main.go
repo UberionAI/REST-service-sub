@@ -5,14 +5,16 @@ import (
 	"REST-service-sub/internal/config"
 	"REST-service-sub/internal/db"
 	"REST-service-sub/internal/handler"
+	"REST-service-sub/internal/logger"
 	"REST-service-sub/internal/middleware"
 	"REST-service-sub/internal/service"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/rs/zerolog/log"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"log"
+	"strings"
 )
 
 // @title REST API Subscription service
@@ -24,14 +26,21 @@ import (
 func main() {
 	_ = godotenv.Load("../../.env")
 	cfg := config.LoadConfig()
+
+	logger.Init(cfg.LogLevel)
+	log.Info().Str("log_level", cfg.LogLevel).Msg("Logger is initialized")
+
 	fmt.Println("Config loaded successfully...")
 
-	//Checking DSN (check for getting .env from docker)
-	//	fmt.Println("DSN:", cfg.DSN())
+	if strings.ToLower(cfg.LogLevel) == "debug" {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	gdb, err := db.NewGormDB(cfg)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatal().Err(err).Msg("Failed to connect to database")
 	}
 	fmt.Println("Database connected successfully!")
 
@@ -55,6 +64,6 @@ func main() {
 	addr := fmt.Sprintf(":%s", cfg.AppPort)
 	fmt.Printf("Server is listening on %s\n", addr)
 	if err := r.Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Fatal().Err(err).Msg("Failed to start server")
 	}
 }

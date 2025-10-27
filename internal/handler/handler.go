@@ -48,17 +48,17 @@ func (h *SubscriptionHandler) RegisterRoutes(r *gin.Engine) {
 func (h *SubscriptionHandler) Create(c *gin.Context) {
 	var dto CreateSubscriptionDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondWithError(c, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 	if err := h.validate.Struct(dto); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondWithError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	startDate, err := ParseMonthYear(dto.StartDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid start_date"})
+		respondWithError(c, http.StatusBadRequest, "invalid start date")
 		return
 	}
 
@@ -66,7 +66,7 @@ func (h *SubscriptionHandler) Create(c *gin.Context) {
 	if dto.EndDate != nil {
 		ed, err := ParseMonthYear(*dto.EndDate)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid end_date"})
+			respondWithError(c, http.StatusBadRequest, "invalid end_date")
 			return
 		}
 		endDate = &ed
@@ -74,7 +74,7 @@ func (h *SubscriptionHandler) Create(c *gin.Context) {
 
 	uid, err := uuid.Parse(dto.UserID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+		respondWithError(c, http.StatusBadRequest, "invalid user_id")
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *SubscriptionHandler) Create(c *gin.Context) {
 	}
 
 	if err := h.svc.Create(sub); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+		respondWithError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusCreated, sub)
@@ -109,16 +109,16 @@ func (h *SubscriptionHandler) Get(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondWithError(c, http.StatusBadRequest, "invalid id")
 		return
 	}
 	sub, err := h.svc.GetByID(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+			respondWithError(c, http.StatusNotFound, "id not found")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+		respondWithError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, sub)
@@ -140,18 +140,18 @@ func (h *SubscriptionHandler) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondWithError(c, http.StatusBadRequest, "invalid id")
 		return
 	}
 	var dto CreateSubscriptionDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondWithError(c, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
 	// validate, parse dates, build model same as Create
 	startDate, err := ParseMonthYear(dto.StartDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid start_date"})
+		respondWithError(c, http.StatusBadRequest, "invalid start date")
 		return
 	}
 
@@ -159,7 +159,7 @@ func (h *SubscriptionHandler) Update(c *gin.Context) {
 	if dto.EndDate != nil {
 		ed, err := ParseMonthYear(*dto.EndDate)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid end_date"})
+			respondWithError(c, http.StatusBadRequest, "invalid end date")
 			return
 		}
 		endDate = &ed
@@ -167,7 +167,7 @@ func (h *SubscriptionHandler) Update(c *gin.Context) {
 
 	uid, err := uuid.Parse(dto.UserID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id"})
+		respondWithError(c, http.StatusBadRequest, "invalid user_id")
 		return
 	}
 
@@ -180,7 +180,7 @@ func (h *SubscriptionHandler) Update(c *gin.Context) {
 	}
 
 	if err := h.svc.Update(id, updated); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+		respondWithError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, updated)
@@ -199,11 +199,11 @@ func (h *SubscriptionHandler) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		respondWithError(c, http.StatusBadRequest, "invalid id")
 		return
 	}
 	if err := h.svc.Delete(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+		respondWithError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -234,7 +234,7 @@ func (h *SubscriptionHandler) List(c *gin.Context) {
 	offset := 0
 	subs, err := h.svc.List(filter, limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
+		respondWithError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, subs)
@@ -258,17 +258,17 @@ func (h *SubscriptionHandler) Aggregate(c *gin.Context) {
 	from := c.Query("from") // expecting YYYY-MM or MM-YYYY
 	to := c.Query("to")
 	if from == "" || to == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "from and to required"})
+		respondWithError(c, http.StatusBadRequest, "invalid from or to")
 		return
 	}
 	pFrom, err := ParseMonthYear(from)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid from"})
+		respondWithError(c, http.StatusBadRequest, "invalid from date")
 		return
 	}
 	pTo, err := ParseMonthYear(to)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid to"})
+		respondWithError(c, http.StatusBadRequest, "invalid to date")
 		return
 	}
 	var uid *uuid.UUID
@@ -284,7 +284,7 @@ func (h *SubscriptionHandler) Aggregate(c *gin.Context) {
 	}
 	total, err := h.svc.AggregateTotalCost(pFrom, pTo, uid, svcName)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "aggregation error"})
+		respondWithError(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

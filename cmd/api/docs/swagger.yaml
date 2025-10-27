@@ -1,0 +1,9 @@
+basePath: /
+host: localhost:8000
+info:
+  contact: {}
+  description: REST API for userdata aggregation of the subscriptions
+  title: REST API Subscription service
+  version: "1.0"
+paths: {}
+swagger: "2.0"

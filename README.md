@@ -46,6 +46,7 @@ REST-service-sub/
 │   ├── handler/
 │   │   ├── dto.go
 │   │   ├── handler.go
+│   │   ├── error_response.go
 │   ├── logger/
 │   │   └── logger.go
 │   ├── middleware/
