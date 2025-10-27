@@ -27,8 +27,6 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "REST API for userdata aggregation of the subscriptions",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

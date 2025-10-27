@@ -3,6 +3,7 @@ package handler
 import (
 	"gorm.io/gorm"
 	"net/http"
+	"strconv"
 	"time"
 
 	"REST-service-sub/internal/model"
@@ -217,21 +218,41 @@ func (h *SubscriptionHandler) Delete(c *gin.Context) {
 // @Produce json
 // @Param user_id query string false "Filter by user UUID"
 // @Param service_name query string false "Filter by service name"
+// @Param page query int false "Page number (default 1)"
+// @Param limit query int false "Items per page (default 10)"
 // @Success 200 {array} SubscriptionResponse
+// @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /subscriptions [get]
 func (h *SubscriptionHandler) List(c *gin.Context) {
 	filter := make(map[string]interface{})
+
 	if userID := c.Query("user_id"); userID != "" {
-		if uid, err := uuid.Parse(userID); err == nil {
-			filter["user_id"] = uid
+		uid, err := uuid.Parse(userID)
+		if err != nil {
+			respondWithError(c, http.StatusBadRequest, "invalid user_id format")
+			return
 		}
+		filter["user_id"] = uid
+
 	}
+
 	if serviceName := c.Query("service_name"); serviceName != "" {
 		filter["service_name"] = serviceName
 	}
-	limit := 100
-	offset := 0
+
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if err != nil || limit < 1 {
+		limit = 10
+	}
+
+	offset := (page - 1) * limit
+
 	subs, err := h.svc.List(filter, limit, offset)
 	if err != nil {
 		respondWithError(c, http.StatusInternalServerError, err.Error())
